@@ -57,6 +57,7 @@ actu2 = actu2.fillna(method = 'ffill')
 w2 = w.fillna(method = 'backfill')
 w2 = w2.fillna(method = 'ffill')
 
+##### IQR 계산 후 outlier는 nan 값으로 대체함 (최대한 데이터의 수를 보존하기 위함, 이후 결측치 앞/뒤의 값으로 채워줌)
 for c in gc2.columns:
     if gc2[c].dtype == float or gc2[c].dtype == int:
         q1 = gc2[c].quantile(0.25)
