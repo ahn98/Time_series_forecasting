@@ -18,6 +18,11 @@ from sklearn.preprocessing import MinMaxScaler
 greenhouse_climate = pd.read_csv('/home/jy/3_dataset/AGIC/GreenhouseClimate_automato_modified.csv')
 weather = pd.read_csv('/home/jy/3_dataset/AGIC/Weather_modified.csv')
 
+'''
+"gc" = greenhouse climate
+"actu" = greenhouse actuator
+"w" = outside weather
+'''
 gc = greenhouse_climate[['time','Tair','Rhair', 'CO2air']]
 actu = greenhouse_climate[['time', 'VentLee', 'Ventwind', 'AssimLight', 'EnScr', 'PipeGrow', 'PipeLow', 'Tot_PAR']]
 w = weather[['time', 'T_out', 'RH_out', 'I_glob', 'Winddir', 'Windsp']]
