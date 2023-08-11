@@ -1,42 +1,30 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
-from statsmodels.stats.outliers_influence import variance_inflation_factor
+import tensorflow as tf
 from sklearn.preprocessing import MinMaxScaler
-import tensorflow as tf
-from tensorflow.keras.layers import Dense, LSTM, Dropout, Activation
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.optimizers import Adam
 
-import numpy as np
-import tensorflow as tf
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import LSTM, Dense
+# data load
+df = pd.read_csv('file_path.csv')
+df.drop('time', axis = 1, inplace = True)
 
-# train/test split
-feature_columns = list(gcwactu3.columns.difference(['Tair'])) # target을 제외한 모든 행
-X = gcwactu3[feature_columns] # 설명변수
-y = gcwactu3['Tair'] # target 설정
+# train test split
+from sklearn.model_selection import train_test_split
+def split_data(df, target_col, test_size=0.4, val_size=0.5, random_state=42):
+    feature_columns = list(df.columns.difference([target_col]))
+    X = df[feature_columns]
+    y = df[target_col]
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state)
+    X_test, X_val, y_test, y_val = train_test_split(X_test, y_test, test_size=val_size, random_state=random_state)
+    return X_train, X_test, y_train, y_test, X_val, y_val
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.4, random_state = 42)
-X_test, X_val, y_test, y_val = train_test_split(X_test, y_test, test_size=0.5, random_state = 42)
-#y_test의 'time' index를 사용하기 위해 내보냄
-#y_test.to_csv('y_test.csv')
+target_col = "Tair"
+X_train, X_test, y_train, y_test, X_val, y_val = split_data(df, target_col)
 
-#%%
-# Define the window size
-window_size = 8640  # input data = 30일
-
-# Reshape
-X_train_windowed = []
-for i in range(window_size, len(X_train)):
-    X_train_windowed.append(X_train.iloc[i - window_size:i, :].values)
-X_train_windowed = np.array(X_train_windowed)
-
-X_test_windowed = []
-for i in range(window_size, len(X_test)):
-    X_test_windowed.append(X_test.iloc[i - window_size:i, :].values)
-X_test_windowed = np.array(X_test_windowed)
-
+# scaling
 scaler11 = MinMaxScaler()
 scaler22 = MinMaxScaler()
 X_train = scaler11.fit_transform(X_train)
@@ -55,14 +43,43 @@ y_val_array = np.array(y_val)
 y_val_reshape = y_val_array.reshape(-1, 1)
 y_val =scaler22.fit_transform(y_val_reshape)
 
+# window size 설정
+WINDOW_SIZE = 8640
+BATCH_SIZE = 32
 
-# %%
-# Build the model (양방향 모델/과거와 미래의 정보를 모두 활용한다. )
-# <-> 단방향은 tf.keras.layers.LSTM(32)
-# Lambda layer: 입력 데이터의 차원을 변경하여 모델에 맞게 변환한다
+def windowed_dataset(x, y, window_size, batch_size, shuffle):
+    # X 값 window dataset 구성
+    ds_x = tf.data.Dataset.from_tensor_slices(x)
+    ds_x = ds_x.window(WINDOW_SIZE, shift=1, stride=1, drop_remainder=True)
+    ds_x = ds_x.flat_map(lambda x: x.batch(WINDOW_SIZE))
 
+    #y 값 추가
+    ds_y = tf.data.Dataset.from_tensor_slices(y[WINDOW_SIZE:])
+    ds = tf.data.Dataset.zip((ds_x, ds_y))
+    if shuffle:
+        ds = ds.shuffle(1000)
+    return ds.batch(batch_size).prefetch(1)
+
+import tensorflow as tf
+train_data = windowed_dataset(X_train, y_train, WINDOW_SIZE, BATCH_SIZE, True)
+test_data = windowed_dataset(X_test, y_test, WINDOW_SIZE, BATCH_SIZE, False)
+
+# 데이터 셋의 구성을 확인
+for data in train_data.take(1):
+    print(f'데이터셋(X) 구성(batch size, window size, feature 갯수): {data[0].shape}')
+    print(f'데이터셋(y) 구성(batch size, window size, feature 갯수): {data[1].shape}')
+
+#################
+##### Model #####
+#################
+import tensorflow as tf
+from tensorflow.keras.layers import Dense, Dropout, Activation, LSTM
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.optimizers import Adam
+
+## input size 확인
 model = tf.keras.models.Sequential([
-    tf.keras.layers.Lambda(lambda x: tf.expand_dims(x, axis=-1),input_shape=[None]),
+    tf.keras.layers.Reshape((1, 14), input_shape=(14,)),
     tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(128, return_sequences=True)),
     tf.keras.layers.Dropout(0.1),
     tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(128, return_sequences=True)),
@@ -74,18 +91,19 @@ model = tf.keras.models.Sequential([
     tf.keras.layers.Dense(1),
     tf.keras.layers.Lambda(lambda x: x * 100.0)
 ])
-# Set the learning rate
+
+#learning rate
 learning_rate = 0.005
 
-# Set the optimizer 
+# optimizer 
 #optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate, momentum=0.9)
 
-# Set the training parameters
+# training parameters
 model.compile(loss=tf.keras.losses.Huber(),
               optimizer='adam',
               metrics=["mae"])
 
-# Train the model
+# Train
 model.fit(X_train, y_train, epochs=100)
 model.evaluate(X_test, y_test)
 pred = model.predict(X_test)
@@ -96,7 +114,7 @@ mae = mean_absolute_error(y_test, pred)
 rmse = np.sqrt(mean_squared_error(y_test, pred))
 r2 = r2_score(y_test, pred)
 
-print('Tair MSE: {:.4f}'.format(mse)) 
-print('Tair MAE: {:.4f}'.format(mae)) 
-print('Tair RMSE: {:.4f}'.format(rmse)) 
-print('Tair R2: {:.4f}'.format(r2))
+print('TEMP MSE: {:.4f}'.format(mse)) 
+print('TEMP MAE: {:.4f}'.format(mae)) 
+print('TEMP RMSE: {:.4f}'.format(rmse)) 
+print('TEMP R2: {:.4f}'.format(r2))
