@@ -95,9 +95,6 @@ model = tf.keras.models.Sequential([
 #learning rate
 learning_rate = 0.005
 
-# optimizer 
-#optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate, momentum=0.9)
-
 # training parameters
 model.compile(loss=tf.keras.losses.Huber(),
               optimizer='adam',
