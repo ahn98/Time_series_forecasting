@@ -22,7 +22,7 @@ def split_data(df, target_col, test_size=0.4, val_size=0.5, random_state=42):
     X_test, X_val, y_test, y_val = train_test_split(X_test, y_test, test_size=val_size, random_state=random_state)
     return X_train, X_test, y_train, y_test, X_val, y_val
 
-target_col = "Tair"
+target_col = "Tair"  # 타겟 선정
 X_train, X_test, y_train, y_test, X_val, y_val = split_data(df, target_col)
 
 # scaling
