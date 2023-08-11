@@ -9,7 +9,8 @@ from sklearn.preprocessing import MinMaxScaler
 
 # data load
 df = pd.read_csv('file_path.csv')
-df.drop('time', axis = 1, inplace = True)
+pd.to_datetime(df['time'])
+df.set_index('time', inplace = True)
 
 # train test split
 from sklearn.model_selection import train_test_split
