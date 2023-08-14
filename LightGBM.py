@@ -14,7 +14,7 @@ def load_data(file_path):
     df.set_index('time', inplace=True)
     return df
 
-def split_data(df, target_col, test_size=0.4, val_size=0.5, random_state=42):
+def split_data(df, target_col, test_size=0.4, val_size=0.5, random_state=2021):
     feature_columns = list(df.columns.difference([target_col]))
     X = df[feature_columns]
     y = df[target_col]
