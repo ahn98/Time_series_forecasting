@@ -104,7 +104,7 @@ model.compile(loss=tf.keras.losses.Huber(),
 # Train
 model.fit(train_data, epochs=100)
 model.evaluate(test_data)
-#pred = model.predict(X_test)
+#pred = model.predict(test_data)
 
 # results
 mse = mean_squared_error(y_test, pred)
