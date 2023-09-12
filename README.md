@@ -17,6 +17,7 @@
 **2-3. LSTM**
 - two version is uploded (m1&m2)
 <br>
+
 **2-4. GRU**
 <br>
 
