@@ -96,18 +96,14 @@ model.fit(X_train, y_train, epochs=100)
 pred = model.predict(X_test)
 
 ##### results
-from sklearn.metrics import mean_absolute_error, mean_squared_error
 rmse = np.sqrt(mean_squared_error(y_test_scaled, pred))
-print("RMSE: %f" % (rmse))  
-
 mse = mean_squared_error(y_test_scaled, pred)
-print('mae: %f' %(mse)) 
-
 mae = mean_absolute_error(y_test_scaled, pred)
-print('mae: %f' %(mae))  
-
-from sklearn.metrics import r2_score
 r2 = r2_score(y_test_scaled, pred)
+ 
+print('mse: %f' %(mse))
+print('mae: %f' %(mae)) 
+print("RMSE: %f" % (rmse))
 print('R2: %f' %(r2))
 
 ##### inverse transform
